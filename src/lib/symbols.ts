@@ -127,3 +127,42 @@ export function normalizeSymbol(input: string): string {
   }
   return s;
 }
+
+/** 시장 구분 표기 */
+export function boardOf(symbol: string): '코스피' | '코스닥' | '해외' {
+  if (/\.KQ$/i.test(symbol)) return '코스닥';
+  if (/\.KS$/i.test(symbol)) return '코스피';
+  return '해외';
+}
+
+const ETF_PATTERN = /^(KODEX|TIGER)|ETF|^(SPY|QQQ|TQQQ|VOO)$/i;
+
+export function isEtf(p: Preset) {
+  return ETF_PATTERN.test(p.name) || ETF_PATTERN.test(p.symbol);
+}
+
+export type Category = 'ALL' | 'KOSPI' | 'KOSDAQ' | 'ETF' | 'US';
+
+export const CATEGORIES: { key: Category; label: string }[] = [
+  { key: 'ALL', label: '전체' },
+  { key: 'KOSPI', label: '코스피' },
+  { key: 'KOSDAQ', label: '코스닥' },
+  { key: 'ETF', label: 'ETF' },
+  { key: 'US', label: '해외' },
+];
+
+/** 카테고리별 종목 목록. ETF 는 국내/해외 양쪽에서 뽑는다 */
+export function presetsByCategory(cat: Category): Preset[] {
+  if (cat === 'ETF') return PRESETS.filter(isEtf);
+  const rest = PRESETS.filter((p) => !isEtf(p));
+  switch (cat) {
+    case 'KOSPI':
+      return rest.filter((p) => boardOf(p.symbol) === '코스피');
+    case 'KOSDAQ':
+      return rest.filter((p) => boardOf(p.symbol) === '코스닥');
+    case 'US':
+      return rest.filter((p) => p.market === 'US');
+    default:
+      return PRESETS;
+  }
+}
