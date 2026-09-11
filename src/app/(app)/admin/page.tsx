@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, post } from '@/lib/fetcher';
+import { api, post, del } from '@/lib/fetcher';
 import { won } from '@/lib/format';
 import { Spinner, Empty, ErrorBox } from '@/components/ui';
 
@@ -29,6 +29,27 @@ export default function AdminPage() {
     setBusy(u.id);
     try {
       await post('/api/admin/reset', { userId: u.id });
+      await load();
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function remove(u: U) {
+    if (
+      !confirm(
+        `${u.name}(${u.email}) 계정을 완전히 삭제합니다.
+보유 종목·거래 기록·랭킹 기록이 모두 사라지고 되돌릴 수 없습니다.
+진행할까요?`
+      )
+    )
+      return;
+    setErr('');
+    setBusy(u.id);
+    try {
+      await del(`/api/admin/users?userId=${u.id}`);
       await load();
     } catch (e: any) {
       setErr(e.message);
@@ -74,13 +95,24 @@ export default function AdminPage() {
                     <td className="td text-right text-muted">{u._count.holdings}</td>
                     <td className="td text-right text-muted">{u._count.orders}</td>
                     <td className="td text-right">
-                      <button
-                        onClick={() => reset(u)}
-                        disabled={busy === u.id}
-                        className="btn-ghost !px-2.5 !py-1 !text-xs"
-                      >
-                        {busy === u.id ? '초기화 중...' : '계좌 초기화'}
-                      </button>
+                      <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => reset(u)}
+                          disabled={busy === u.id}
+                          className="btn-ghost !px-2.5 !py-1 !text-xs"
+                        >
+                          {busy === u.id ? '처리 중...' : '계좌 초기화'}
+                        </button>
+                        {u.role !== 'ADMIN' && (
+                          <button
+                            onClick={() => remove(u)}
+                            disabled={busy === u.id}
+                            className="btn-ghost !px-2.5 !py-1 !text-xs hover:!border-up hover:!text-up"
+                          >
+                            삭제
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -91,7 +123,8 @@ export default function AdminPage() {
       </section>
 
       <p className="text-xs text-muted">
-        계좌 초기화는 되돌릴 수 없습니다. 리그를 새로 시작할 때만 사용하세요.
+        계좌 초기화와 삭제는 되돌릴 수 없습니다. 초기화는 리그를 새로 시작할 때,
+        삭제는 테스트 계정이나 그만둔 참가자를 정리할 때 쓰세요.
       </p>
     </div>
   );

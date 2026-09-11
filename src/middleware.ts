@@ -38,6 +38,10 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // API, 정적파일 제외한 전 페이지에 적용
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\.(?:png|jpg|svg|ico|webmanifest)$).*)'],
+  // API와 정적 자산을 제외한 전 페이지에 적용.
+  // sw.js / offline.html / manifest / 아이콘이 로그인으로 리다이렉트되면
+  // 서비스워커 등록과 앱 설치가 통째로 실패하므로 반드시 제외한다.
+  matcher: [
+    '/((?!api|_next/static|_next/image|sw\.js|offline\.html|manifest\.webmanifest|icons/|favicon).*)',
+  ],
 };
