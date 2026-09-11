@@ -22,6 +22,9 @@ type Portfolio = { cash: number; rows: { symbol: string; quantity: number; avgPr
 function TradeInner() {
   const initial = useSearchParams().get('symbol') ?? '005930.KS';
   const [symbol, setSymbol] = useState(initial);
+  // 모바일에서는 종목을 고르면 상세를 전체화면 팝업으로 띄운다.
+  // 데스크톱에서는 항상 우측에 붙어 있으므로 이 값이 영향을 주지 않는다.
+  const [detailOpen, setDetailOpen] = useState(false);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [pf, setPf] = useState<Portfolio | null>(null);
   const [pending, setPending] = useState<Order[]>([]);
@@ -52,6 +55,28 @@ function TradeInner() {
   }, []);
 
   useEffect(() => { loadAccount(); }, [loadAccount]);
+
+  // 팝업이 열려 있는 동안 뒤 목록이 같이 스크롤되지 않게 막는다
+  useEffect(() => {
+    if (!detailOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [detailOpen]);
+
+  // 팝업이 열린 상태에서 뒤로가기를 누르면 팝업만 닫는다
+  useEffect(() => {
+    if (!detailOpen) return;
+    const onPop = (e: PopStateEvent) => { e.preventDefault(); setDetailOpen(false); };
+    window.history.pushState({ detail: true }, '');
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [detailOpen]);
+
+  function selectSymbol(s: string) {
+    setSymbol(s);
+    setDetailOpen(true);
+  }
   useEffect(() => {
     setQuote(null);
     setMsg('');
@@ -108,11 +133,27 @@ function TradeInner() {
     <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
       {/* 좌측: 종목 목록 */}
       <aside className="lg:sticky lg:top-20 lg:self-start">
-        <StockList selected={symbol} onSelect={setSymbol} watchSymbols={watch} />
+        <StockList selected={symbol} onSelect={selectSymbol} watchSymbols={watch} />
       </aside>
 
-      {/* 우측 */}
-      <div className="space-y-4">
+      {/* 우측 상세. 모바일에서는 전체화면 팝업, lg 이상에서는 평범한 컬럼 */}
+      <div
+        className={`${
+          detailOpen ? 'fixed inset-0 z-50 overflow-y-auto bg-bg p-3 pb-24' : 'hidden'
+        } space-y-4 lg:static lg:z-auto lg:block lg:overflow-visible lg:bg-transparent lg:p-0`}
+      >
+        {/* 모바일 전용 헤더 (닫기) */}
+        <div className="sticky top-0 z-10 -mx-3 mb-1 flex items-center justify-between border-b border-line bg-bg/95 px-3 py-2 backdrop-blur lg:hidden">
+          <span className="text-sm font-bold">{quote?.name ?? '종목 상세'}</span>
+          <button
+            onClick={() => setDetailOpen(false)}
+            className="btn-ghost !px-3 !py-1.5 !text-xs"
+            aria-label="닫기"
+          >
+            ✕ 닫기
+          </button>
+        </div>
+
         <div className="grid gap-4 xl:grid-cols-5">
           {/* 시세 + 차트 */}
           <section className="card xl:col-span-3">
@@ -292,8 +333,10 @@ function TradeInner() {
           </section>
         </div>
 
+      </div>
+
         {/* 미체결 주문 */}
-        <section className="card">
+        <section className="card lg:col-span-2">
           <h2 className="mb-3 font-semibold">미체결 주문</h2>
           {pending.length === 0 ? (
             <Empty>대기 중인 지정가 주문이 없습니다</Empty>
@@ -338,7 +381,6 @@ function TradeInner() {
             </div>
           )}
         </section>
-      </div>
     </div>
   );
 }

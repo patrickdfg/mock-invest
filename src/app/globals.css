@@ -8,6 +8,12 @@
   color-scheme: dark;
 }
 
+/* 기준 글자 크기를 16px -> 14px 로 내려 화면당 정보량을 늘린다.
+   Tailwind 의 rem 기반 크기·여백이 전부 같은 비율로 줄어든다. */
+html {
+  font-size: 14px;
+}
+
 html,
 body {
   background: #0b0e13;
@@ -17,10 +23,10 @@ body {
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-line bg-panel p-5;
+    @apply rounded-2xl border border-line bg-panel p-4;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1 rounded-xl px-3.5 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40;
   }
   .btn-primary {
     @apply btn bg-brand text-white hover:brightness-110;
@@ -35,7 +41,7 @@ body {
     @apply btn border border-line bg-panel2 text-slate-200 hover:border-slate-500;
   }
   .input {
-    @apply w-full rounded-xl border border-line bg-panel2 px-3.5 py-2.5 text-sm outline-none transition placeholder:text-muted focus:border-brand;
+    @apply w-full rounded-xl border border-line bg-panel2 px-3 py-2 text-sm outline-none transition placeholder:text-muted focus:border-brand;
   }
   .label {
     @apply mb-1.5 block text-xs font-medium text-muted;
@@ -44,10 +50,10 @@ body {
     @apply rounded-lg bg-panel2 px-2 py-0.5 text-[11px] font-medium text-muted;
   }
   .th {
-    @apply px-3 py-2.5 text-left text-xs font-medium text-muted;
+    @apply px-2.5 py-2 text-left text-xs font-medium text-muted;
   }
   .td {
-    @apply px-3 py-3 text-sm tabular-nums;
+    @apply px-2.5 py-2 text-sm tabular-nums;
   }
 }
 

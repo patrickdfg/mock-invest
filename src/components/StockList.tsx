@@ -99,7 +99,7 @@ export default function StockList({
           <button
             key={k}
             onClick={() => setTab(k)}
-            className={`flex-1 py-3 text-sm font-semibold transition ${
+            className={`flex-1 py-2.5 text-sm font-semibold transition ${
               tab === k
                 ? 'border-b-2 border-brand text-white'
                 : 'text-muted hover:text-slate-300'
@@ -114,7 +114,7 @@ export default function StockList({
       </div>
 
       {/* 검색 + 카테고리 */}
-      <div className="space-y-2 border-b border-line p-3">
+      <div className="space-y-1.5 border-b border-line p-2.5">
         <input
           className="input !py-2 !text-sm"
           placeholder="목록에서 찾기"
@@ -141,7 +141,7 @@ export default function StockList({
       </div>
 
       {/* 목록 */}
-      <ul className="max-h-[520px] flex-1 overflow-y-auto lg:max-h-[640px]">
+      <ul className="max-h-[60vh] flex-1 overflow-y-auto lg:max-h-[calc(100vh-230px)]">
         {list.length === 0 && (
           <li className="px-4 py-10 text-center text-sm text-muted">
             {tab === 'WATCH' ? '관심종목이 없습니다. ☆ 를 눌러 추가하세요' : '결과가 없습니다'}
@@ -155,13 +155,13 @@ export default function StockList({
             <li key={p.symbol}>
               <button
                 onClick={() => onSelect(p.symbol)}
-                className={`flex w-full items-center gap-2 border-b border-line/50 px-3 py-2.5 text-left transition ${
+                className={`flex w-full items-center gap-2 border-b border-line/50 px-2.5 py-1.5 text-left transition ${
                   active ? 'bg-brand/15 ring-1 ring-inset ring-brand' : 'hover:bg-panel2'
                 }`}
               >
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold">{p.name}</div>
-                  <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted">
+                  <div className="truncate text-[13px] font-semibold leading-tight">{p.name}</div>
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted">
                     <span className="chip !px-1.5 !py-0">{boardOf(p.symbol)}</span>
                     <span className="truncate">{p.symbol.replace(/\.(KS|KQ)$/, '')}</span>
                   </div>
@@ -170,14 +170,14 @@ export default function StockList({
                 <div className="shrink-0 text-right">
                   {quote ? (
                     <>
-                      <div className="text-sm font-medium tabular-nums">{won(quote.price)}</div>
-                      <div className={`text-xs tabular-nums ${toneClass(quote.changePct)}`}>
+                      <div className="text-[13px] font-medium leading-tight tabular-nums">{won(quote.price)}</div>
+                      <div className={`text-[11px] tabular-nums ${toneClass(quote.changePct)}`}>
                         {quote.changePct > 0 ? '▲' : quote.changePct < 0 ? '▼' : '-'}{' '}
                         {pct(quote.changePct)}
                       </div>
                     </>
                   ) : (
-                    <div className="h-8 w-16 animate-pulse rounded bg-panel2" />
+                    <div className="h-7 w-14 animate-pulse rounded bg-panel2" />
                   )}
                 </div>
               </button>
