@@ -5,6 +5,8 @@
 
 실제 돈은 오가지 않는다. 학습용이다.
 
+**▶ 접속: https://mock-invest-beta.vercel.app**
+
 ---
 
 ## 주요 기능
