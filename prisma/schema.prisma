@@ -1,13 +1,16 @@
 // 주식 모의투자 앱 - 데이터 모델
-// SQLite 사용: Prisma enum 미지원이므로 상태값은 String + 주석으로 명시
+// DB: PostgreSQL (Neon). 상태값은 String + 주석으로 명시해 마이그레이션 부담을 줄였다.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // 서버리스(Vercel)에서는 커넥션 풀러 주소를 쓴다
+  url       = env("DATABASE_URL")
+  // 마이그레이션은 풀러를 우회한 직접 연결이 필요하다
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

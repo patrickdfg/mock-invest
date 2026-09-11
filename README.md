@@ -32,7 +32,7 @@
 
 - **Next.js 15** (App Router) + React 19 + TypeScript
 - **Tailwind CSS** — 다크 테마, 모바일 대응
-- **Prisma + SQLite** — 파일 하나면 끝. 10명 규모엔 충분하다
+- **Prisma + PostgreSQL** — Neon 무료 플랜. 서버리스에 맞춰 커넥션 풀러 사용
 - **jose** (JWT) + **bcryptjs** (비밀번호)
 - **Recharts** — 가격 차트, 자산 추이 그래프
 - **zod** — API 입력 검증
@@ -61,10 +61,13 @@ INVITE_CODE="우리반2025"            # 친구들에게 알려줄 가입 코드
 ADMIN_EMAILS="본인이메일@example.com"  # 이 이메일로 가입하면 관리자
 ```
 
-이어서 DB를 만들고 실행한다.
+`.env`의 `DATABASE_URL` / `DIRECT_URL`에는 Neon에서 받은 주소를 넣는다
+(아래 **배포** 항목 1~2단계 참고. 로컬 개발도 같은 DB를 쓰면 된다).
+
+이어서 테이블을 만들고 실행한다.
 
 ```bash
-npx prisma db push
+npm run db:deploy
 npm run dev
 ```
 
@@ -84,8 +87,9 @@ http://localhost:3000 접속 → 회원가입 → 끝.
 
 | 이름 | 필수 | 기본값 | 설명 |
 |---|---|---|---|
-| `DATABASE_URL` | O | `file:./dev.db` | SQLite 파일 경로 |
-| `JWT_SECRET` | O | - | 세션 서명 키. **반드시 바꿀 것** |
+| `DATABASE_URL` | O | - | PostgreSQL 주소. Neon의 **Pooled** 연결 문자열 |
+| `DIRECT_URL` | O | - | 같은 DB의 **직접** 연결 문자열 (마이그레이션용) |
+| `JWT_SECRET` | O | - | 세션 서명 키. `npm run setup`이 자동 생성 |
 | `INVITE_CODE` | | (없음) | 가입 초대코드. 비우면 누구나 가입 가능 |
 | `SEED_CASH` | | `10000000` | 시작 자금(원) |
 | `ALLOW_24H` | | `true` | `false`면 평일 09:00~15:30에만 국내주식 거래 가능 |
@@ -101,31 +105,61 @@ SEED_ADMIN_EMAIL=teacher@example.com SEED_ADMIN_PASSWORD=바꿀비밀번호 npm 
 
 ## 친구들과 같이 쓰려면 (배포)
 
-SQLite 파일을 쓰기 때문에 **디스크가 유지되는 서버**가 필요하다.
-Vercel은 파일이 매 배포마다 사라지므로 이 구성 그대로는 맞지 않는다.
+**Vercel(앱) + Neon(DB)** 조합. 둘 다 무료이고 카드 등록이 필요 없다.
+한 번 올려두면 네 컴퓨터를 꺼도 24시간 돌아간다.
 
-### 방법 1. Railway / Render (추천, 무료 등급 가능)
+### 1단계 — Neon에서 DB 만들기 (3분)
 
-1. 이 저장소를 GitHub에 올린다.
-2. Railway 또는 Render에서 New Project → 이 저장소 선택.
-3. 환경변수에 `JWT_SECRET`, `INVITE_CODE`, `DATABASE_URL` 입력.
-   - 영구 볼륨을 `/data`에 붙이고 `DATABASE_URL="file:/data/app.db"` 로 지정.
-4. 빌드 명령 `npm run build`, 시작 명령 `npm start`.
-5. 첫 배포 후 한 번 `npx prisma db push` 실행 (Render는 Shell 탭에서).
+1. https://neon.tech 접속 → **Sign up** → GitHub 계정으로 로그인
+2. 프로젝트 이름 `mock-invest`, 지역은 **Asia Pacific (Singapore)** 선택 → Create
+3. 만들어지면 **Connection string** 박스가 보인다. 여기서 값을 두 개 복사한다.
+   - **Pooled connection** (주소에 `-pooler`가 들어감) → `DATABASE_URL`로 쓸 값
+   - 토글을 꺼서 나오는 직접 연결 주소 (`-pooler` 없음) → `DIRECT_URL`로 쓸 값
 
-### 방법 2. 집 PC에서 돌리고 친구들 접속
+   두 주소는 `-pooler` 유무만 다르다. 헷갈리면 Pooled 주소에서 `-pooler`만 지우면 된다.
 
-```bash
-npm run build
-npm start
-```
+### 2단계 — Vercel에 올리기 (5분)
 
-같은 와이파이면 `http://내PC아이피:3000` 으로 접속 가능하다.
-밖에서도 쓰려면 [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) 같은 걸 붙이면 된다.
+1. https://vercel.com 접속 → **Sign up** → GitHub 계정으로 로그인
+2. **Add New... → Project** → 이 저장소(`mock-invest`) **Import**
+3. **Environment Variables**에 아래 4개를 넣는다.
 
-> 외부에 열 거라면 `JWT_SECRET`은 반드시 바꾸고, `INVITE_CODE`도 꼭 설정하자.
+   | Name | Value |
+   |---|---|
+   | `DATABASE_URL` | 1단계의 Pooled 주소 |
+   | `DIRECT_URL` | 1단계의 직접 주소 |
+   | `JWT_SECRET` | 아무 랜덤 문자열 (아래 명령으로 생성) |
+   | `ADMIN_EMAILS` | 본인 이메일 |
+   | `INVITE_CODE` | 친구들에게 알려줄 코드 |
 
----
+   `JWT_SECRET` 만들기:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   ```
+
+4. **Deploy** 클릭. 빌드 중에 `prisma migrate deploy`가 자동으로 실행되어
+   테이블까지 만들어진다. 따로 할 일이 없다.
+5. 끝나면 `https://mock-invest-xxxx.vercel.app` 주소가 나온다. 이걸 친구들에게 보내면 된다.
+
+### 3단계 — 확인
+
+1. 받은 주소 접속 → 본인 이메일로 회원가입 (`ADMIN_EMAILS`에 넣었으면 자동 관리자)
+2. 상단에 **관리** 메뉴가 보이면 정상
+3. 친구들에게 **주소 + 초대코드** 전달
+
+### 자주 막히는 곳
+
+- **빌드 실패 `P1001: Can't reach database`** — `DIRECT_URL`이 비었거나 오타다.
+  Neon 주소 끝에 `?sslmode=require`가 붙어 있는지 확인.
+- **로그인은 되는데 새로고침하면 풀림** — `JWT_SECRET`을 안 넣었거나 배포마다 바뀌는 값이다.
+  Vercel 환경변수에 **고정된 값**으로 저장해야 한다.
+- **환경변수를 고친 뒤** — Vercel의 Deployments 탭에서 **Redeploy**를 눌러야 반영된다.
+
+### 다른 선택지
+
+SQLite 파일을 그대로 쓰고 싶다면 Railway(월 $5)나 Fly.io(월 $2~3)에
+영구 볼륨을 붙이면 된다. 그 경우 `prisma/schema.prisma`의 provider를
+`sqlite`로 되돌리고 `directUrl` 줄을 지우면 된다.
 
 ## 리그 운영 팁
 
@@ -159,6 +193,8 @@ src/
 
 ### 설계상 알아둘 점
 
+- **DB는 PostgreSQL(Neon).** 서버리스에서는 요청마다 커넥션이 새로 뜨므로
+  풀러 주소(`DATABASE_URL`)로 접속하고, 마이그레이션만 직접 연결(`DIRECT_URL`)을 쓴다.
 - **모든 금액은 KRW.** 미국 주식은 매수 시점 환율로 환산해 저장한다.
   따라서 환율이 오르면 달러 기준 주가가 그대로여도 평가액이 오른다 (실제 해외투자와 동일).
 - **지정가 주문은 지연 체결.** 별도 스케줄러 없이, 누군가 포트폴리오·주문·랭킹 API를 부를 때
