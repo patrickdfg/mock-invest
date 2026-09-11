@@ -41,24 +41,24 @@
 
 ## 빠른 시작 (로컬)
 
+> **먼저 알아둘 것**: 이 앱은 **한 곳에 띄워두고 다같이 접속**하는 구조다.
+> 친구들은 설치할 필요가 없다. 주소를 열고 초대코드로 가입하면 끝이다.
+> 아래 설치 과정은 **서버를 돌리는 사람 한 명**만 하면 된다.
+> (각자 따로 설치하면 데이터베이스가 사람마다 따로 생겨서 랭킹이 의미가 없어진다)
+
 ```bash
-git clone <이-저장소-주소>
-cd 모의투자
+git clone https://github.com/patrickdfg/mock-invest
+cd mock-invest
 npm install
-cp .env.example .env
+npm run setup      # .env 생성 + JWT_SECRET 자동 발급
 ```
 
-`.env`를 열어 최소 두 가지를 고친다.
+`npm run setup`이 `.env`를 만들고 보안키를 알아서 채워준다.
+남은 건 `.env`를 열어 두 줄만 고치는 것이다.
 
 ```env
-JWT_SECRET="여기에-랜덤한-긴-문자열"
-INVITE_CODE="우리반2025"
-```
-
-`JWT_SECRET` 만드는 법 (아무거나 하나):
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+INVITE_CODE="우리반2025"            # 친구들에게 알려줄 가입 코드
+ADMIN_EMAILS="본인이메일@example.com"  # 이 이메일로 가입하면 관리자
 ```
 
 이어서 DB를 만들고 실행한다.
@@ -69,6 +69,14 @@ npm run dev
 ```
 
 http://localhost:3000 접속 → 회원가입 → 끝.
+
+### 친구들이 할 일
+
+1. 알려준 주소 접속
+2. 회원가입 (이름·이메일·비밀번호 + 초대코드)
+3. 바로 1,000만원으로 거래 시작
+
+설치도, `.env`도, 명령어도 필요 없다.
 
 ---
 

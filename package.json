@@ -4,6 +4,7 @@
   "private": true,
   "description": "고등학생 소모임용 주식 모의투자 앱",
   "scripts": {
+    "setup": "node scripts/setup.mjs",
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
