@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css');
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #0b0e13;
+  color: #e8ecf3;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-panel p-5;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn bg-brand text-white hover:brightness-110;
+  }
+  .btn-buy {
+    @apply btn bg-up text-white hover:brightness-110;
+  }
+  .btn-sell {
+    @apply btn bg-down text-white hover:brightness-110;
+  }
+  .btn-ghost {
+    @apply btn border border-line bg-panel2 text-slate-200 hover:border-slate-500;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-panel2 px-3.5 py-2.5 text-sm outline-none transition placeholder:text-muted focus:border-brand;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-medium text-muted;
+  }
+  .chip {
+    @apply rounded-lg bg-panel2 px-2 py-0.5 text-[11px] font-medium text-muted;
+  }
+  .th {
+    @apply px-3 py-2.5 text-left text-xs font-medium text-muted;
+  }
+  .td {
+    @apply px-3 py-3 text-sm tabular-nums;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #2b3446;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
