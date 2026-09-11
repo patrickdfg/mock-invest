@@ -14,6 +14,8 @@ export const config = {
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean),
   jwtSecret: process.env.JWT_SECRET ?? 'dev-only-insecure-secret-change-me-please-32',
+  googleClientId: (process.env.GOOGLE_CLIENT_ID ?? '').trim(),
+  googleClientSecret: (process.env.GOOGLE_CLIENT_SECRET ?? '').trim(),
 };
 
 /** 거래 비용 (실제 증권사 기준 근사치) */
