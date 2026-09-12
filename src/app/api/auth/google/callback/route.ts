@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { config } from '@/lib/config';
 import { signSession, setSessionCookie } from '@/lib/auth';
 import { callbackUrl, exchangeCode, isGoogleEnabled } from '@/lib/google';
+import { promoteIfListed } from '@/lib/promote';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,8 +46,9 @@ export const GET = async (req: Request) => {
           image: profile.picture ?? existing.image,
         },
       });
+      const role = await promoteIfListed(user);
       await setSessionCookie(
-        await signSession({ uid: user.id, email: user.email, name: user.name, role: user.role })
+        await signSession({ uid: user.id, email: user.email, name: user.name, role })
       );
       return back(req, '/dashboard');
     }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, post, del } from '@/lib/fetcher';
+import { api, post, patch, del } from '@/lib/fetcher';
 import { won } from '@/lib/format';
 import { Spinner, Empty, ErrorBox } from '@/components/ui';
 
@@ -58,6 +58,21 @@ export default function AdminPage() {
     }
   }
 
+  async function changeRole(u: U, role: 'ADMIN' | 'USER') {
+    const label = role === 'ADMIN' ? '관리자로 지정' : '관리자 권한 회수';
+    if (!confirm(`${u.name}(${u.email}) 계정을 ${label}합니다.`)) return;
+    setErr('');
+    setBusy(u.id);
+    try {
+      await patch('/api/admin/users', { userId: u.id, role });
+      await load();
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setBusy('');
+    }
+  }
+
   if (!users) return <Spinner />;
 
   return (
@@ -89,7 +104,13 @@ export default function AdminPage() {
                   <tr key={u.id} className="border-b border-line/50 last:border-0">
                     <td className="td font-medium">{u.name}</td>
                     <td className="td text-muted">{u.email}</td>
-                    <td className="td"><span className="chip">{u.role}</span></td>
+                    <td className="td">
+                      <span
+                        className={`chip ${u.role === 'ADMIN' ? '!bg-brand/20 !text-brand' : ''}`}
+                      >
+                        {u.role === 'ADMIN' ? '관리자' : '참가자'}
+                      </span>
+                    </td>
                     <td className="td text-right">{won(u.cash)}</td>
                     <td className="td text-right text-muted">{won(u.seedCash)}</td>
                     <td className="td text-right text-muted">{u._count.holdings}</td>
@@ -103,14 +124,31 @@ export default function AdminPage() {
                         >
                           {busy === u.id ? '처리 중...' : '계좌 초기화'}
                         </button>
-                        {u.role !== 'ADMIN' && (
+                        {u.role === 'ADMIN' ? (
                           <button
-                            onClick={() => remove(u)}
+                            onClick={() => changeRole(u, 'USER')}
                             disabled={busy === u.id}
-                            className="btn-ghost !px-2.5 !py-1 !text-xs hover:!border-up hover:!text-up"
+                            className="btn-ghost !px-2.5 !py-1 !text-xs"
                           >
-                            삭제
+                            권한 회수
                           </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => changeRole(u, 'ADMIN')}
+                              disabled={busy === u.id}
+                              className="btn-ghost !px-2.5 !py-1 !text-xs hover:!border-brand hover:!text-brand"
+                            >
+                              관리자 지정
+                            </button>
+                            <button
+                              onClick={() => remove(u)}
+                              disabled={busy === u.id}
+                              className="btn-ghost !px-2.5 !py-1 !text-xs hover:!border-up hover:!text-up"
+                            >
+                              삭제
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
