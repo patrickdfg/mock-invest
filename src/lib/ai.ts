@@ -11,8 +11,11 @@ import {
   gradeOf,
   type Diagnosis,
 } from './aiPrompt';
+import { diagnoseByRules } from './portfolioRules';
 
 export const AI_MODEL = 'claude-opus-5';
+/** 규칙 기반 진단 결과의 model 표기 */
+export const RULE_ENGINE = 'rule-engine';
 
 /** 비용 통제: 하루(최근 24시간) 3회, 연속 요청 사이 10분 */
 export const AI_LIMITS = { perDay: 3, cooldownMinutes: 10 };
@@ -78,7 +81,8 @@ async function buildSnapshot(userId: string) {
 
 export async function getQuota(userId: string) {
   const recent = await prisma.aiDiagnosis.findMany({
-    where: { userId, createdAt: { gte: new Date(Date.now() - 864e5) } },
+    // 규칙 엔진 결과는 비용이 없으므로 횟수 제한에서 뺀다
+    where: { userId, model: { not: RULE_ENGINE }, createdAt: { gte: new Date(Date.now() - 864e5) } },
     orderBy: { createdAt: 'desc' },
     select: { createdAt: true },
   });
@@ -102,9 +106,8 @@ export async function latestDiagnosis(userId: string) {
 
 /** 진단 실행: 쿼터 확인 -> 스냅샷 -> Claude 호출 -> 검증 -> 저장 */
 export async function runDiagnosis(userId: string) {
-  if (!isAiEnabled()) {
-    throw new HttpError('AI 진단이 아직 설정되지 않았습니다. 관리자에게 문의하세요.', 503);
-  }
+  // 키가 없으면 API 없이 도는 규칙 엔진으로 진단한다
+  if (!isAiEnabled()) return runRuleDiagnosis(userId);
 
   const quota = await getQuota(userId);
   if (quota.remaining <= 0) {
@@ -187,5 +190,41 @@ export async function runDiagnosis(userId: string) {
     },
   });
 
+  return { id: saved.id, createdAt: saved.createdAt, model: saved.model, result };
+}
+
+/** API 키 없이 규칙으로 진단. 즉시 끝나고 비용·횟수 제한이 없다 */
+async function runRuleDiagnosis(userId: string) {
+  await settlePending(userId);
+  const [pf, user, orders] = await Promise.all([
+    getPortfolio(userId),
+    prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { createdAt: true } }),
+    prisma.order.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 300 }),
+  ]);
+
+  const body = diagnoseByRules({
+    cash: pf.cash,
+    totalValue: pf.totalValue,
+    seedCash: pf.seedCash,
+    totalPnlPct: pf.totalPnlPct,
+    rows: pf.rows.map((r) => ({ name: r.name, market: r.market, pnlPct: r.pnlPct, weight: r.weight })),
+    filled: orders
+      .filter((o) => o.status === 'FILLED')
+      .map((o) => ({
+        createdAt: o.filledAt ?? o.createdAt,
+        side: o.side,
+        fee: o.fee,
+        tax: o.tax,
+        realizedPnl: o.realizedPnl,
+      })),
+    canceled: orders.filter((o) => o.status === 'CANCELED').length,
+    ageDays: Math.max(1, Math.ceil((Date.now() - user.createdAt.getTime()) / 864e5)),
+  });
+
+  const score = Math.max(0, Math.min(100, Math.round(body.score)));
+  const result: Diagnosis = { ...body, score, grade: gradeOf(score) };
+  const saved = await prisma.aiDiagnosis.create({
+    data: { userId, model: RULE_ENGINE, score, result: result as unknown as Prisma.InputJsonValue },
+  });
   return { id: saved.id, createdAt: saved.createdAt, model: saved.model, result };
 }

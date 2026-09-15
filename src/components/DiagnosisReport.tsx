@@ -42,7 +42,8 @@ export default function DiagnosisReport({
           <div className="h-full bg-brand" style={{ width: `${r.score}%` }} />
         </div>
         <p className="mt-2 text-right text-[11px] text-muted">
-          {new Date(data.createdAt).toLocaleString('ko-KR')} 진단
+          {new Date(data.createdAt).toLocaleString('ko-KR')} 진단 ·{' '}
+          {data.model === 'rule-engine' ? '규칙 기반 분석' : 'Claude AI 분석'}
         </p>
       </section>
 

@@ -9,7 +9,7 @@ export const maxDuration = 60;
 export const GET = handler(async () => {
   const user = await requireUser();
   const [latest, quota] = await Promise.all([latestDiagnosis(user.id), getQuota(user.id)]);
-  return ok({ enabled: isAiEnabled(), latest, quota, limits: AI_LIMITS });
+  return ok({ mode: isAiEnabled() ? 'claude' : 'rule', latest, quota, limits: AI_LIMITS });
 });
 
 /** 새 진단 실행 */

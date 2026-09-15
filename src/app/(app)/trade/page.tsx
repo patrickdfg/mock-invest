@@ -7,6 +7,7 @@ import { won, pct, toneClass, kstTimeString } from '@/lib/format';
 import { Spinner, Empty, ErrorBox } from '@/components/ui';
 import PriceChart from '@/components/PriceChart';
 import StockList from '@/components/StockList';
+import StockAnalysisModal from '@/components/StockAnalysisModal';
 
 type Quote = {
   symbol: string; name: string; market: string; currency: string;
@@ -25,6 +26,7 @@ function TradeInner() {
   // 모바일에서는 종목을 고르면 상세를 전체화면 팝업으로 띄운다.
   // 데스크톱에서는 항상 우측에 붙어 있으므로 이 값이 영향을 주지 않는다.
   const [detailOpen, setDetailOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [pf, setPf] = useState<Portfolio | null>(null);
   const [pending, setPending] = useState<Order[]>([]);
@@ -136,6 +138,8 @@ function TradeInner() {
         <StockList selected={symbol} onSelect={selectSymbol} watchSymbols={watch} />
       </aside>
 
+      <StockAnalysisModal symbol={symbol} open={aiOpen} onClose={() => setAiOpen(false)} />
+
       {/* 우측 상세. 모바일에서는 전체화면 팝업, lg 이상에서는 평범한 컬럼 */}
       <div
         className={`${
@@ -171,6 +175,12 @@ function TradeInner() {
                         aria-label="관심종목"
                       >
                         {watched ? '★' : '☆'}
+                      </button>
+                      <button
+                        onClick={() => setAiOpen(true)}
+                        className="shrink-0 rounded-lg bg-brand/15 px-2 py-0.5 text-[11px] font-bold text-brand hover:bg-brand/25"
+                      >
+                        ✨ AI 분석
                       </button>
                     </div>
                     <div className="mt-0.5 text-xs text-muted">

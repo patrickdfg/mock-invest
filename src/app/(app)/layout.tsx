@@ -4,7 +4,8 @@ import Nav from '@/components/Nav';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
-  if (!user) redirect('/login');
+  // 쿠키는 유효한데 계정이 없으면(삭제됨) 쿠키부터 지워야 리다이렉트 루프가 안 생긴다
+  if (!user) redirect('/api/auth/logout');
 
   return (
     <div className="min-h-screen">
