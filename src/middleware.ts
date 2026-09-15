@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 const PUBLIC = ['/login', '/signup'];
+const CHANGE_PASSWORD = '/change-password';
 const key = new TextEncoder().encode(
   process.env.JWT_SECRET ?? 'dev-only-insecure-secret-change-me-please-32'
 );
@@ -11,10 +12,13 @@ export async function middleware(req: NextRequest) {
   const token = req.cookies.get('mi_session')?.value;
 
   let valid = false;
+  let mustChange = false;
   if (token) {
     try {
-      await jwtVerify(token, key);
+      const { payload } = await jwtVerify(token, key);
       valid = true;
+      // 관리자가 비밀번호를 0000 으로 초기화한 뒤 로그인한 세션
+      mustChange = payload.mcp === true;
     } catch {
       valid = false;
     }
@@ -26,6 +30,13 @@ export async function middleware(req: NextRequest) {
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('next', pathname);
+    return NextResponse.redirect(url);
+  }
+  // 임시 비밀번호로 들어온 사람은 비밀번호를 바꾸기 전까지 다른 화면에 못 간다
+  if (valid && mustChange && pathname !== CHANGE_PASSWORD) {
+    const url = req.nextUrl.clone();
+    url.pathname = CHANGE_PASSWORD;
+    url.search = '';
     return NextResponse.redirect(url);
   }
   if (valid && isPublic) {

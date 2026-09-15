@@ -23,3 +23,6 @@ export const FEES = {
   KR: { commission: 0.00015, sellTax: 0.0018 }, // 수수료 0.015%, 매도 거래세 0.18%
   US: { commission: 0.0025, sellTax: 0 }, // 수수료 0.25%
 } as const;
+
+/** 관리자가 비밀번호를 초기화할 때 설정되는 임시 비밀번호. 로그인 후 즉시 변경을 강제한다 */
+export const RESET_PASSWORD = '0000';

@@ -4,7 +4,7 @@ import { handler, ok, requireAdmin, HttpError } from '@/lib/api';
 export const dynamic = 'force-dynamic';
 
 export const GET = handler(async () => {
-  await requireAdmin();
+  const me = await requireAdmin();
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'asc' },
     select: {
@@ -18,7 +18,7 @@ export const GET = handler(async () => {
       _count: { select: { orders: true, holdings: true } },
     },
   });
-  return ok({ users });
+  return ok({ users, me: me.id });
 });
 
 /** 참가자 삭제. 보유·주문·스냅샷은 onDelete: Cascade 로 같이 지워진다 */

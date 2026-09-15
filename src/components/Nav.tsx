@@ -53,6 +53,9 @@ export default function Nav({ name, role }: { name: string; role: string }) {
 
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden text-sm text-muted sm:inline">{name}님</span>
+            <Link href="/change-password" className="btn-ghost !px-2.5 !py-1 !text-xs">
+              비밀번호
+            </Link>
             <button onClick={logout} className="btn-ghost !px-2.5 !py-1 !text-xs">
               로그아웃
             </button>

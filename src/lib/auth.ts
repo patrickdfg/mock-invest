@@ -6,7 +6,14 @@ import { prisma } from './db';
 const COOKIE = 'mi_session';
 const key = new TextEncoder().encode(config.jwtSecret);
 
-export type SessionPayload = { uid: string; email: string; name: string; role: string };
+export type SessionPayload = {
+  uid: string;
+  email: string;
+  name: string;
+  role: string;
+  /** must change password: 관리자 초기화 후 임시 비밀번호로 로그인한 세션 */
+  mcp?: boolean;
+};
 
 export async function signSession(p: SessionPayload) {
   return new SignJWT({ ...p })

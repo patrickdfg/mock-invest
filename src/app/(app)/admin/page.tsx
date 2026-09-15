@@ -15,10 +15,15 @@ export default function AdminPage() {
   const [users, setUsers] = useState<U[] | null>(null);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState('');
+  const [meId, setMeId] = useState('');
+  const [notice, setNotice] = useState('');
 
   const load = () =>
-    api<{ users: U[] }>('/api/admin/users')
-      .then((r) => setUsers(r.users))
+    api<{ users: U[]; me: string }>('/api/admin/users')
+      .then((r) => {
+        setUsers(r.users);
+        setMeId(r.me);
+      })
       .catch((e) => { setErr(e.message); setUsers([]); });
 
   useEffect(() => { load(); }, []);
@@ -58,6 +63,29 @@ export default function AdminPage() {
     }
   }
 
+  async function resetPassword(u: U) {
+    if (
+      !confirm(
+        `${u.name}(${u.email})의 비밀번호를 0000 으로 초기화합니다.\n\n` +
+          '계좌와 거래 기록은 그대로 남아요.\n' +
+          '본인이 0000 으로 로그인하면 새 비밀번호로 바꾸기 전까지 앱을 쓸 수 없어요.\n\n' +
+          '진행할까요?'
+      )
+    )
+      return;
+    setErr('');
+    setNotice('');
+    setBusy(u.id);
+    try {
+      await post('/api/admin/password', { userId: u.id });
+      setNotice(`${u.name}님의 비밀번호를 0000 으로 초기화했어요. 본인에게 알려주세요.`);
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setBusy('');
+    }
+  }
+
   async function changeRole(u: U, role: 'ADMIN' | 'USER') {
     const label = role === 'ADMIN' ? '관리자로 지정' : '관리자 권한 회수';
     if (!confirm(`${u.name}(${u.email}) 계정을 ${label}합니다.`)) return;
@@ -79,6 +107,11 @@ export default function AdminPage() {
     <div className="space-y-5">
       <h1 className="text-xl font-bold">관리자</h1>
       <ErrorBox message={err} />
+      {notice && (
+        <div className="rounded-xl border border-brand/40 bg-brand/10 px-3.5 py-2.5 text-sm text-brand">
+          {notice}
+        </div>
+      )}
 
       <section className="card">
         <h2 className="mb-3 font-semibold">참가자 {users.length}명</h2>
@@ -117,6 +150,15 @@ export default function AdminPage() {
                     <td className="td text-right text-muted">{u._count.orders}</td>
                     <td className="td text-right">
                       <div className="flex justify-end gap-1">
+                        {u.id !== meId && (
+                          <button
+                            onClick={() => resetPassword(u)}
+                            disabled={busy === u.id}
+                            className="btn-ghost !px-2.5 !py-1 !text-xs"
+                          >
+                            비번 초기화
+                          </button>
+                        )}
                         <button
                           onClick={() => reset(u)}
                           disabled={busy === u.id}

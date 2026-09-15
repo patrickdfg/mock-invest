@@ -26,8 +26,15 @@ export const POST = handler(async (req: Request) => {
 
   const role = await promoteIfListed(user);
 
+  const mustChangePassword = user.mustChangePassword;
   await setSessionCookie(
-    await signSession({ uid: user.id, email: user.email, name: user.name, role })
+    await signSession({
+      uid: user.id,
+      email: user.email,
+      name: user.name,
+      role,
+      ...(mustChangePassword ? { mcp: true } : {}),
+    })
   );
-  return ok({ id: user.id, name: user.name, role });
+  return ok({ id: user.id, name: user.name, role, mustChangePassword });
 });

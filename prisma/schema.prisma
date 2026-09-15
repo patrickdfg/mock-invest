@@ -20,6 +20,8 @@ model User {
   // 구글로 가입한 사용자는 비밀번호가 없다
   password  String?
   provider  String   @default("local") // local | google
+  // 관리자가 비밀번호를 초기화하면 true. 새 비밀번호로 바꾸기 전까지 앱 사용을 막는다
+  mustChangePassword Boolean @default(false)
   googleId  String?  @unique
   image     String?
   role      String   @default("USER") // USER | ADMIN
