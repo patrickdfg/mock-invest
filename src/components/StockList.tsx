@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/fetcher';
-import { won, pct, toneClass } from '@/lib/format';
+import { won, pct, toneClass, compactKo } from '@/lib/format';
 import {
   CATEGORIES,
   boardOf,
@@ -11,8 +11,17 @@ import {
   type Preset,
 } from '@/lib/symbols';
 
-type Q = { symbol: string; price: number; changePct: number };
+type Q = { symbol: string; price: number; changePct: number; volume: number | null };
 type Tab = 'ALL' | 'WATCH';
+type Sort = 'ALL' | 'RISING' | 'POPULAR' | 'VOLUME';
+type Pop = { holders: number; watchers: number };
+
+const SORTS: { key: Sort; label: string }[] = [
+  { key: 'ALL', label: '전체' },
+  { key: 'RISING', label: '급상승' },
+  { key: 'POPULAR', label: '인기많은' },
+  { key: 'VOLUME', label: '거래량상위' },
+];
 
 /**
  * 좌측 종목 목록.
@@ -35,11 +44,22 @@ export default function StockList({
   const [quotes, setQuotes] = useState<Record<string, Q>>({});
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState('');
+  const [sort, setSort] = useState<Sort>('ALL');
+  const [popular, setPopular] = useState<Record<string, Pop>>({});
+
+  // 리그 참가자들이 보유/관심 등록한 수. 목록 전체에 한 번만 필요하다
+  useEffect(() => {
+    api<{ items: ({ symbol: string } & Pop)[] }>('/api/market/popular')
+      .then((r) =>
+        setPopular(Object.fromEntries(r.items.map((i) => [i.symbol.toUpperCase(), i])))
+      )
+      .catch(() => {});
+  }, []);
   const reqId = useRef(0);
 
   const watchSet = useMemo(() => new Set(watchSymbols), [watchSymbols]);
 
-  const list: Preset[] = useMemo(() => {
+  const filtered: Preset[] = useMemo(() => {
     const base =
       tab === 'WATCH'
         ? presetsByCategory('ALL').filter((p) => watchSet.has(p.symbol))
@@ -53,6 +73,26 @@ export default function StockList({
         p.keywords.toLowerCase().includes(s)
     );
   }, [tab, cat, q, watchSet]);
+
+  /** 정렬. 시세가 아직 안 온 종목은 뒤로 보낸다 */
+  const list: Preset[] = useMemo(() => {
+    if (sort === 'ALL') return filtered;
+    const key = (p: Preset): number | null => {
+      const s = p.symbol.toUpperCase();
+      if (sort === 'RISING') return quotes[s]?.changePct ?? null;
+      if (sort === 'VOLUME') return quotes[s]?.volume ?? null;
+      const pop = popular[s];
+      return pop ? pop.holders * 2 + pop.watchers : 0;
+    };
+    return [...filtered].sort((a, b) => {
+      const ka = key(a);
+      const kb = key(b);
+      if (ka == null && kb == null) return 0;
+      if (ka == null) return 1;
+      if (kb == null) return -1;
+      return kb - ka;
+    });
+  }, [filtered, sort, quotes, popular]);
 
   /** 보이는 목록의 시세를 15개씩 나눠 채운다 */
   const loadQuotes = useCallback(async (symbols: string[]) => {
@@ -113,6 +153,21 @@ export default function StockList({
         ))}
       </div>
 
+      {/* 정렬 */}
+      <div className="flex gap-1 border-b border-line px-2 py-1.5">
+        {SORTS.map((s) => (
+          <button
+            key={s.key}
+            onClick={() => setSort(s.key)}
+            className={`flex-1 whitespace-nowrap rounded-lg py-1.5 text-xs font-semibold transition ${
+              sort === s.key ? 'bg-panel2 text-white' : 'text-muted hover:text-slate-200'
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
       {/* 검색 + 카테고리 */}
       <div className="space-y-1.5 border-b border-line p-2.5">
         <input
@@ -148,7 +203,7 @@ export default function StockList({
           </li>
         )}
 
-        {list.map((p) => {
+        {list.map((p, idx) => {
           const quote = quotes[p.symbol.toUpperCase()];
           const active = selected === p.symbol;
           return (
@@ -159,11 +214,28 @@ export default function StockList({
                   active ? 'bg-brand/15 ring-1 ring-inset ring-brand' : 'hover:bg-panel2'
                 }`}
               >
+                {sort !== 'ALL' && (
+                  <span
+                    className={`w-5 shrink-0 text-center text-xs font-bold tabular-nums ${
+                      idx < 3 ? 'text-brand' : 'text-muted'
+                    }`}
+                  >
+                    {idx + 1}
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[13px] font-semibold leading-tight">{p.name}</div>
                   <div className="flex items-center gap-1.5 text-[10px] text-muted">
                     <span className="chip !px-1.5 !py-0">{boardOf(p.symbol)}</span>
-                    <span className="truncate">{p.symbol.replace(/\.(KS|KQ)$/, '')}</span>
+                    <span className="truncate">
+                      {sort === 'POPULAR'
+                        ? popular[p.symbol.toUpperCase()]
+                          ? `보유 ${popular[p.symbol.toUpperCase()].holders}명 · 관심 ${popular[p.symbol.toUpperCase()].watchers}명`
+                          : '담은 친구 없음'
+                        : sort === 'VOLUME' && quote?.volume != null
+                          ? `거래량 ${compactKo(quote.volume)}주`
+                          : p.symbol.replace(/\.(KS|KQ)$/, '')}
+                    </span>
                   </div>
                 </div>
 

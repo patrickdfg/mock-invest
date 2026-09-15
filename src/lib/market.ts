@@ -22,6 +22,7 @@ export type Quote = {
   changePct: number;
   fxRate: number; // USD -> KRW (KR 종목이면 1)
   stale: boolean; // 외부 조회 실패로 캐시를 쓴 경우
+  volume: number | null; // 당일 거래량(주)
 };
 
 const UA =
@@ -36,6 +37,7 @@ type RawQuote = {
   currency: string;
   price: number;
   prevClose: number;
+  volume: number | null; // 당일 거래량(주). DB 캐시 폴백에는 없다
 };
 
 async function yfetch(url: string, timeoutMs = 6000) {
@@ -77,6 +79,7 @@ async function fetchRaw(symbol: string): Promise<RawQuote> {
     currency: meta.currency ?? 'USD',
     price: meta.regularMarketPrice,
     prevClose: prev,
+    volume: typeof meta.regularMarketVolume === 'number' ? meta.regularMarketVolume : null,
   };
 }
 
@@ -114,6 +117,7 @@ async function getRaw(symbol: string): Promise<{ raw: RawQuote; stale: boolean }
           currency: cached.currency,
           price: cached.price,
           prevClose: cached.prevClose,
+          volume: null,
         },
         stale: true,
       };
@@ -156,6 +160,7 @@ export async function getQuote(symbol: string): Promise<Quote> {
     changePct,
     fxRate,
     stale,
+    volume: raw.volume,
   };
 }
 

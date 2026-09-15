@@ -27,10 +27,11 @@ model User {
   seedCash  Float // 최초 시드머니 (수익률 계산 기준)
   createdAt DateTime @default(now())
 
-  holdings  Holding[]
-  orders    Order[]
-  watchlist Watchlist[]
-  snapshots Snapshot[]
+  holdings    Holding[]
+  orders      Order[]
+  watchlist   Watchlist[]
+  snapshots   Snapshot[]
+  aiDiagnoses AiDiagnosis[]
 
   @@index([role])
 }
@@ -111,4 +112,19 @@ model QuoteCache {
   price     Float
   prevClose Float
   updatedAt DateTime @updatedAt
+}
+
+// AI 투자 습관 진단 결과. 호출 비용이 드니 결과를 저장해 재조회에 재사용하고,
+// 사용 횟수 제한 판정에도 쓴다.
+model AiDiagnosis {
+  id        String   @id @default(cuid())
+  userId    String
+  model     String // 실제로 응답한 모델 (fallback 시 달라질 수 있다)
+  score     Int
+  result    Json
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

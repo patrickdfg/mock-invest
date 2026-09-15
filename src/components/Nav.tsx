@@ -8,6 +8,7 @@ const LINKS = [
   { href: '/dashboard', label: '홈', icon: '🏠' },
   { href: '/trade', label: '거래', icon: '📊' },
   { href: '/portfolio', label: '내 자산', icon: '💰' },
+  { href: '/diagnosis', label: 'AI 진단', icon: '🤖' },
   { href: '/history', label: '내역', icon: '📜' },
   { href: '/ranking', label: '랭킹', icon: '🏆' },
 ];
